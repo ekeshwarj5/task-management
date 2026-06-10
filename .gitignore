@@ -1,0 +1,36 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+.cache/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# logs
+*.log
+npm-debug.log*
+
+# tsbuild
+*.tsbuildinfo
+
+# database (local volumes)
+postgres-data/
+*.db
+*.sqlite
+
+# tests
+.nyc_output/
+
+# private notes
+docs/curiosity.md

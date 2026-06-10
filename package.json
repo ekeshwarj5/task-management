@@ -1,0 +1,21 @@
+{
+  "name": "task-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Full-stack task management — Next.js + Fastify + Postgres.",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@task/api",
+    "dev:web": "npm run dev --workspace=@task/web"
+  }
+}
