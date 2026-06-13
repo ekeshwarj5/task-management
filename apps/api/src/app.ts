@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
 import { config } from './config';
+import { authRoutes } from './routes/auth';
 
 export interface BuildAppOptions {
   logger?: boolean;
@@ -27,6 +28,8 @@ export const buildApp = (options: BuildAppOptions = {}): FastifyInstance => {
   app.register(sensible);
 
   app.get('/health', async () => ({ ok: true, service: 'task-api' }));
+
+  app.register(authRoutes);
 
   return app;
 };
