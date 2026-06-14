@@ -25,6 +25,15 @@ export const buildApp = (options: BuildAppOptions = {}): FastifyInstance => {
   app.register(cors, {
     origin: config.CORS_ORIGIN,
     credentials: true,
+    // Be explicit so the response doesn't depend on @fastify/cors's
+    // defaults version-to-version. PATCH especially: it's in the spec
+    // default list, but if it's ever missing the browser silently
+    // refuses task edits with a cached preflight failure.
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+    // Disable preflight caching during dev so a bad response doesn't
+    // stick for 5 minutes. Production overrides via 600 in env.
+    maxAge: config.NODE_ENV === 'production' ? 600 : 0,
   });
   app.register(sensible);
 
