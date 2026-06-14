@@ -6,10 +6,35 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { deleteTask, updateTask } from '@/lib/api';
 
+interface TasksListResponse {
+  items: Task[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 interface TaskListProps {
   tasks: Task[];
   onEdit: (task: Task) => void;
 }
+
+/**
+ * Mutate every cached `['tasks', …]` query — the same task can sit in
+ * many filtered/sorted variations of the cache; without this, an
+ * optimistic update on the current view would leave stale copies in
+ * any sibling queries.
+ */
+const mutateAllTaskCaches = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  fn: (data: TasksListResponse) => TasksListResponse,
+) => {
+  queryClient
+    .getQueriesData<TasksListResponse>({ queryKey: ['tasks'] })
+    .forEach(([key, data]) => {
+      if (!data) return;
+      queryClient.setQueryData(key, fn(data));
+    });
+};
 
 const STATUS_CLASS: Record<Task['status'], string> = {
   todo: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
@@ -38,15 +63,46 @@ const formatDate = (iso: string | null): string => {
 export const TaskList = ({ tasks, onEdit }: TaskListProps) => {
   const queryClient = useQueryClient();
 
+  // Optimistic toggle: flip the status in every cached list immediately;
+  // on error we restore from the snapshot we captured in onMutate.
   const toggleComplete = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) =>
       updateTask(id, { status: done ? 'done' : 'todo' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onMutate: async ({ id, done }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previous = queryClient.getQueriesData<TasksListResponse>({ queryKey: ['tasks'] });
+      mutateAllTaskCaches(queryClient, (data) => ({
+        ...data,
+        items: data.items.map((t) =>
+          t.id === id ? { ...t, status: done ? 'done' : 'todo' } : t,
+        ),
+      }));
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
+  // Optimistic delete: drop the row from every cached list (and
+  // decrement total). Rollback on error from the snapshot.
   const remove = useMutation({
     mutationFn: (id: string) => deleteTask(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previous = queryClient.getQueriesData<TasksListResponse>({ queryKey: ['tasks'] });
+      mutateAllTaskCaches(queryClient, (data) => {
+        const items = data.items.filter((t) => t.id !== id);
+        const removed = items.length !== data.items.length ? 1 : 0;
+        return { ...data, items, total: Math.max(0, data.total - removed) };
+      });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
   if (tasks.length === 0) {
