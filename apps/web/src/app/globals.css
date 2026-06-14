@@ -1,10 +1,12 @@
 @import 'tailwindcss';
 
+/* `dark:` is driven by the .dark class on <html>. The class is set
+   by lib/theme.ts (either explicitly or from `prefers-color-scheme`
+   when the user picks "System"). This lets us override system
+   preference deterministically. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-bg: #fafafa;
-  --color-bg-dark: #0a0a0a;
-  --color-fg: #18181b;
-  --color-fg-dark: #fafafa;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -14,15 +16,13 @@ body {
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-fg);
+  background: #fafafa;
+  color: #18181b;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: var(--color-bg-dark);
-    color: var(--color-fg-dark);
-  }
+.dark body {
+  background: #0a0a0a;
+  color: #fafafa;
 }

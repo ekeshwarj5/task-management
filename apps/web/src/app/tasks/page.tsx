@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { TaskFilters, type FilterState } from '@/components/task-filters';
 import { TaskList } from '@/components/task-list';
 import { TaskFormDialog } from '@/components/task-form-dialog';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { ApiError, listTasks, type ListTasksParams } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
 
@@ -67,6 +68,7 @@ export default function TasksPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <h1 className="text-lg font-semibold">Tasks</h1>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <span className="hidden text-sm text-zinc-500 sm:inline">{user?.email}</span>
             <Button size="sm" variant="secondary" onClick={signOut}>
               Sign out
