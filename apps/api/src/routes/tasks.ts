@@ -32,9 +32,10 @@ const toTask = (row: TaskRow): Task => ({
   description: row.description,
   status: row.status,
   priority: row.priority,
-  // pg returns the timestamp column as a Date when mode is not 'string';
-  // for due_date we configured mode:'string' so it stays YYYY-MM-DD.
-  dueDate: row.dueDate ?? null,
+  // due_date is stored as a timestamp (mode:'string') so the driver
+  // returns e.g. '2026-07-01 00:00:00'. Slice to YYYY-MM-DD so the
+  // wire format matches the date-only contract in the shared schema.
+  dueDate: row.dueDate ? row.dueDate.slice(0, 10) : null,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
