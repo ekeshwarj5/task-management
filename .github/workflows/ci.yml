@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Typecheck, build, test
+    runs-on: ubuntu-latest
+
+    services:
+      # GitHub Actions starts this Postgres container alongside the job;
+      # the migrate step + test suite both connect at 127.0.0.1:5432.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: task
+          POSTGRES_PASSWORD: task
+          POSTGRES_DB: task_management_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U task -d task_management_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://task:task@127.0.0.1:5432/task_management_test
+      JWT_SECRET: ci-secret-thirty-two-characters-long-xx
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck (all workspaces)
+        run: npm run typecheck
+
+      - name: Run API migrations against test DB
+        run: npx tsx src/db/migrate.ts
+        working-directory: apps/api
+
+      - name: API tests (Vitest, integration via Postgres service)
+        run: npx vitest run
+        working-directory: apps/api
+
+      - name: Frontend build
+        run: npm run build --workspace=@task/web
