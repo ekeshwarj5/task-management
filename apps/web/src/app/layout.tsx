@@ -31,7 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body className="min-h-full">
+      {/* Grammarly and similar browser extensions inject `data-*`
+          attributes onto <body> before React hydrates. Without this
+          suppression the dev overlay fires a noisy (but harmless)
+          hydration warning that obscures the page. */}
+      <body className="min-h-full" suppressHydrationWarning>
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </QueryProvider>
