@@ -38,15 +38,21 @@ const buildQuery = (params: object): string => {
  * Cookie-bearing fetch. The backend issues an HTTP-only JWT cookie on
  * login; credentials:'include' tells the browser to send it on every
  * subsequent call without us touching localStorage.
+ *
+ * Only sets Content-Type: application/json when we're actually sending
+ * a body. Otherwise Fastify's JSON parser sees the content-type on a
+ * body-less request (logout, delete) and rejects with
+ * FST_ERR_CTP_EMPTY_JSON_BODY.
  */
 const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+  const headers = new Headers(init.headers);
+  if (init.body !== undefined && init.body !== null && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
+    headers,
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
